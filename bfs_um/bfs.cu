@@ -21,6 +21,8 @@
 #include <math.h>
 #include <cuda.h>
 
+#include <caliper/cali.h>
+
 #define MAX_THREADS_PER_BLOCK 512
 #define checkRes(res)\
   {if(cudaSuccess!=res){						\
@@ -70,6 +72,9 @@ void BFSGraph( int argc, char** argv)
 	Usage(argc, argv);
 	exit(0);
 	}
+
+	cuInit(0);
+	CALI_MARK_FUNCTION_BEGIN;
 	
 	input_f = argv[1];
 	printf("Reading File\n");
@@ -256,4 +261,6 @@ void BFSGraph( int argc, char** argv)
 	cudaFree(d_updating_graph_mask);
 	cudaFree(d_graph_visited);
 	cudaFree(d_cost);
+
+	CALI_MARK_FUNCTION_END;
 }
