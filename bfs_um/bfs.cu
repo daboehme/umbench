@@ -22,6 +22,7 @@
 #include <cuda.h>
 
 #include <caliper/cali.h>
+#include <caliper/cali_datatracker.h>
 
 #define MAX_THREADS_PER_BLOCK 512
 #define checkRes(res)\
@@ -113,6 +114,12 @@ void BFSGraph( int argc, char** argv)
 	checkRes(cudaMallocManaged((void**) &h_graph_mask,   sizeof(bool)*no_of_nodes));
 	checkRes(cudaMallocManaged((void**) &h_updating_graph_mask, sizeof(bool)*no_of_nodes));
 	checkRes(cudaMallocManaged((void**) &h_graph_visited, sizeof(bool)*no_of_nodes));
+	
+	CALI_DATATRACKER_TRACK(h_graph_nodes,   sizeof(Node)*no_of_nodes);
+	CALI_DATATRACKER_TRACK(h_graph_mask,    sizeof(bool)*no_of_nodes);
+	CALI_DATATRACKER_TRACK(h_updating_graph_mask, sizeof(bool)*no_of_nodes);
+	CALI_DATATRACKER_TRACK(h_graph_visited, sizeof(bool)*no_of_nodes);
+
 	printf("h_graph_nodes %p \n", h_graph_nodes);
 	printf("h_graph_mask %p \n", h_graph_mask);
 	printf("h_updating_graph_mask %p \n", h_updating_graph_mask);
@@ -143,6 +150,8 @@ void BFSGraph( int argc, char** argv)
 	int id,cost;
 	int* h_graph_edges;// = (int*) malloc(sizeof(int)*edge_list_size);
 	checkRes(cudaMallocManaged((void**) &h_graph_edges, sizeof(int)*edge_list_size));
+	CALI_DATATRACKER_TRACK(h_graph_edges, sizeof(int)*edge_list_size);
+
 	for(int i=0; i < edge_list_size ; i++)
 	{
 		fscanf(fp,"%d",&id);
@@ -187,6 +196,8 @@ void BFSGraph( int argc, char** argv)
 	// allocate mem for the result on host side
 	int* h_cost; //= (int*) malloc( sizeof(int)*no_of_nodes);
 	checkRes(cudaMallocManaged((void**) &h_cost, sizeof(int)*no_of_nodes));
+	CALI_DATATRACKER_TRACK(h_cost, sizeof(int)*no_of_nodes);
+
 	for(int i=0;i<no_of_nodes;i++)
 	  h_cost[i]=-1;
 	h_cost[source]=0;
@@ -201,6 +212,7 @@ void BFSGraph( int argc, char** argv)
 	bool *d_over;
 	//cudaMalloc( (void**) &d_over, sizeof(bool));
 	checkRes(cudaMallocManaged((void**) &d_over, sizeof(bool)));
+	CALI_DATATRACKER_TRACK(d_over, sizeof(bool));
 
 	printf("Copied Everything to GPU memory\n");
 
