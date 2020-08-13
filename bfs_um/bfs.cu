@@ -224,8 +224,10 @@ void BFSGraph( int argc, char** argv)
 	printf("Start traversing the tree\n");
 	//bool stop;
 	//Call the Kernel untill all the elements of Frontier are not false
+	CALI_CXX_MARK_LOOP_BEGIN(mainloop, "bfs.loop");
 	do
 	{
+		CALI_CXX_MARK_LOOP_ITERATION(mainloop, k);
 		//if no thread changes this value then the loop stops
 		//stop=false;
 	        d_over[0] = false;
@@ -243,7 +245,7 @@ void BFSGraph( int argc, char** argv)
 		k++;
 	}
 	while(d_over[0]);
-
+	CALI_CXX_MARK_LOOP_END(mainloop);
 
 	printf("Kernel Executed %d times\n",k);
 
