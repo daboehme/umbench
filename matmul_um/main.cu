@@ -1,6 +1,11 @@
 #include <iostream>
 #include "util.h"
 
+#include <caliper/cali.h>
+#include <caliper/cali_datatracker.h>
+
+#include <cuda.h>
+
 #define VERIFY  1
 #define PREFETCH_GPU 1
 #define DEFAULT_DIM  2048
@@ -23,6 +28,9 @@ int main(int argc, char** argv){
     std::cout << "MATRIX_DIM must be divisible by MATRIX_DIM " << BLOCK_SIZE << std::endl;
     return -1;
   }
+
+  cuInit(0);
+  CALI_MARK_FUNCTION_BEGIN;
   
   const char* env_v1 = std::getenv("NUM_REPS");
   if(env_v1)
@@ -50,7 +58,8 @@ int main(int argc, char** argv){
 
   checkRes(cudaSetDevice(device_id));
 
-  
+  CALI_MARK_BEGIN("alloc");
+
   /* Allocate memory */
   ELEMENT_TYPE *h_a, *h_b, *h_c;
   ELEMENT_TYPE *d_a, *d_b, *d_c;
@@ -59,12 +68,17 @@ int main(int argc, char** argv){
   allocate_matrix((void**)&h_a, (void**)&d_a, matrix_size, allocType);
   allocate_matrix((void**)&h_b, (void**)&d_b, matrix_size, allocType);
   allocate_matrix((void**)&h_c, (void**)&d_c, matrix_size, allocType);
+  cali_datatracker_track(d_a, "d_a", matrix_size);
+  cali_datatracker_track(d_b, "d_b", matrix_size);
+  cali_datatracker_track(d_c, "d_c", matrix_size);
   std::cout << "h_a " << h_a << ", d_a=" << d_a << std::endl;
 
   /* init value (first access) */
   initMatrix(h_a, 0.5f,  matrixDim);
   initMatrix(h_b, 2.0f,  matrixDim);
   initMatrix(h_c, 0.0f,  matrixDim);
+
+  CALI_MARK_END("alloc");
   
   /* CUDA Kernel Launch Configuration */
   dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
@@ -77,6 +91,7 @@ int main(int argc, char** argv){
   checkRes(cudaEventCreate(&stop_event));
   checkRes(cudaStreamCreate(&stream));
 
+  CALI_MARK_BEGIN("prefetch");
 
   /*Optional: prefetch to GPU*/  
 #ifdef PREFETCH_GPU
@@ -98,6 +113,9 @@ int main(int argc, char** argv){
     checkRes(cudaMemcpy(d_b, h_b, matrix_size, cudaMemcpyHostToDevice));
     checkRes(cudaMemcpy(d_c, h_c, matrix_size, cudaMemcpyHostToDevice));
   }
+
+  CALI_MARK_END("prefetch");
+  CALI_MARK_BEGIN("loop");
   
   /* Run Main loop */
   checkRes(cudaEventRecord(start_event, 0)); //on NULL (0) stream 
@@ -109,6 +127,8 @@ int main(int argc, char** argv){
   checkRes(cudaEventElapsedTime(&elapsed_time, start_event, stop_event));
   std::cout << "Elapsed time (ms) : " << elapsed_time
 	    << ", Bandwidth (GB/s) : " << total_mb/elapsed_time << std::endl;
+
+  CALI_MARK_END("loop");
   
 #if VERIFY
   if(allocType==HpgDmcp)
@@ -118,10 +138,11 @@ int main(int argc, char** argv){
   std::cout << "Validation: " << (validated ?"Passed" :"Failed") << std::endl;
 #endif
   
-  
   free_matrix(h_a, d_a, matrix_size, allocType);
   free_matrix(h_b, d_b, matrix_size, allocType);
   free_matrix(h_c, d_c, matrix_size, allocType);
+
+  CALI_MARK_FUNCTION_END;
 
   return 0;
 }
