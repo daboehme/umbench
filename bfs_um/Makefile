@@ -1,7 +1,7 @@
-include ../../common/make.config
+include ../common/make.config
 
-CUDA_DIR=/usr/tce/packages/cuda/cuda-10.1.243
-CALIPER_DIR=${HOME}/local/caliper/lassen-dev-gcc8
+CUDA_DIR=/usr/tce/packages/cuda/cuda-11.2.0
+CALIPER_DIR=/usr/workspace/boehme3/install/caliper/lassen-gcc8-cuda11
 
 CC := $(CUDA_DIR)/bin/nvcc
 CFLAGS := -gencode arch=compute_70,code=sm_70 -std=c++11
